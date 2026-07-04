@@ -16,27 +16,29 @@ class AIIndicatorGUI:
         self.root = root
         self.root.title("AI指示灯控制器 v1.1")
         self.root.geometry("750x650")
-        self.root.configure(bg='#1a1a2e')
+        self.root.configure(bg='#f0f2f5')
         self.root.resizable(True, True)
 
         self.serial_handler = SerialHandler()
         self.api_server = None
         self.api_thread = None
 
-        # 颜色定义
+        # 颜色定义 - 浅色主题
         self.colors = {
-            'bg_primary': '#1a1a2e',
-            'bg_secondary': '#16213e',
-            'bg_card': '#0f3460',
-            'accent': '#e94560',
-            'accent_green': '#00d2ff',
-            'accent_yellow': '#ffd700',
-            'accent_red': '#ff6b6b',
-            'text_primary': '#ffffff',
-            'text_secondary': '#b8b8d1',
-            'success': '#00d2ff',
-            'warning': '#ffd700',
-            'danger': '#ff6b6b'
+            'bg_primary': '#f0f2f5',      # 主背景 - 浅灰
+            'bg_secondary': '#ffffff',     # 卡片背景 - 白色
+            'bg_card': '#e8ecf0',          # 输入框/状态栏背景 - 浅灰
+            'accent': '#e94560',           # 强调红 - 保存按钮
+            'accent_green': '#00b894',     # 绿色强调
+            'accent_yellow': '#f39c12',    # 黄色强调
+            'accent_red': '#e74c3c',       # 红色强调
+            'text_primary': '#2c3e50',     # 主文字 - 深蓝灰
+            'text_secondary': '#7f8c8d',   # 次文字 - 灰
+            'text_on_color': '#ffffff',    # 彩色按钮上的文字 - 白色
+            'success': '#27ae60',          # 成功绿 (深一点,白底可读)
+            'warning': '#f39c12',          # 警告黄
+            'danger': '#e74c3c',           # 危险红
+            'log_text': '#2c3e50'          # 日志文字 - 深色
         }
 
         self.setup_ui()
@@ -161,7 +163,7 @@ class AIIndicatorGUI:
             text="📡 连接串口",
             command=self.toggle_connection,
             bg=self.colors['success'],
-            fg=self.colors['bg_primary'],
+            fg=self.colors['text_on_color'],
             font=('微软雅黑', 10, 'bold'),
             bd=0,
             padx=30,
@@ -196,19 +198,19 @@ class AIIndicatorGUI:
             {
                 'text': '🟢 空闲',
                 'color': self.colors['success'],
-                'hover': '#00b8e6',
+                'hover': '#1e8449',
                 'command': lambda: self.send_light_command('green')
             },
             {
                 'text': '🟡 思考',
                 'color': self.colors['warning'],
-                'hover': '#e6c200',
+                'hover': '#d68910',
                 'command': lambda: self.send_light_command('yellow')
             },
             {
                 'text': '🔴 故障',
                 'color': self.colors['danger'],
-                'hover': '#ff5252',
+                'hover': '#c0392b',
                 'command': lambda: self.send_light_command('red')
             },
             {
@@ -225,7 +227,7 @@ class AIIndicatorGUI:
                 text=config['text'],
                 command=config['command'],
                 bg=config['color'],
-                fg=self.colors['bg_primary'],
+                fg=self.colors['text_on_color'],
                 font=('微软雅黑', 10, 'bold'),
                 bd=0,
                 padx=20,
@@ -403,7 +405,7 @@ class AIIndicatorGUI:
             height=8,
             font=('Consolas', 8),
             bg=self.colors['bg_primary'],
-            fg=self.colors['success'],
+            fg=self.colors['log_text'],
             insertbackground=self.colors['accent'],
             bd=0,
             relief='flat'

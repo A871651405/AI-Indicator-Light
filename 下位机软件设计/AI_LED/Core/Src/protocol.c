@@ -10,6 +10,7 @@
 #include "usart.h"
 #include "led.h"
 #include "buzzer.h"
+#include "storage.h"
 
 /* 私有变量 ----------------------------------------------------------*/
 static ProtocolParser_t parser;
@@ -142,21 +143,25 @@ void Protocol_Process(void)
     switch (parser.cmd) {
         case CMD_GREEN:
             LED_SetGreen();
+            Buzzer_BeepShort();                /* 绿灯: 蜂鸣器固定短响0.5s */
             Protocol_SendResponse(RESP_OK);
             break;
 
         case CMD_YELLOW:
             LED_SetYellow();
+            /* 黄灯: 不触发蜂鸣器 */
             Protocol_SendResponse(RESP_OK);
             break;
 
         case CMD_RED:
             LED_SetRed();
+            Buzzer_TriggerWithSavedSettings(); /* 红灯: 使用Flash保存的音量/时长 */
             Protocol_SendResponse(RESP_OK);
             break;
 
         case CMD_OFF:
             LED_AllOff();
+            Buzzer_Stop();                     /* 关闭: 同时停止蜂鸣器 */
             Protocol_SendResponse(RESP_OK);
             break;
 
@@ -164,8 +169,13 @@ void Protocol_Process(void)
             if (parser.data_len >= 2) {
                 uint8_t volume = parser.data[0];
                 uint8_t duration = parser.data[1];
-                Buzzer_Set(volume, duration);
-                Protocol_SendResponse(RESP_OK);
+                /* 保存到Flash (掉电保存) */
+                int ret = Storage_SaveBuzzerSettings(volume, duration);
+                if (ret == 0) {
+                    Protocol_SendResponse(RESP_OK);
+                } else {
+                    Protocol_SendResponse(RESP_ERROR);
+                }
             } else {
                 Protocol_SendResponse(RESP_ERROR);
             }

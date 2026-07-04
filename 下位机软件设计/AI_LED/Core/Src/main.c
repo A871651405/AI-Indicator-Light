@@ -27,6 +27,7 @@
 #include "protocol.h"
 #include "led.h"
 #include "buzzer.h"
+#include "storage.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,14 +95,21 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  /* 初始化Flash存储 (从Flash读取蜂鸣器配置，掉电保存) */
+  Storage_Init();
+
   /* 初始化协议解析器 */
   Protocol_Init();
 
   /* 初始化蜂鸣器 (启动PWM) */
   Buzzer_Init();
 
-  /* 初始状态: 全部熄灭 */
-  LED_AllOff();
+  /* 上电自检: 所有指示灯亮0.5s + 蜂鸣器响0.5s */
+  LED_AllOn();                      /* 点亮所有LED */
+  Buzzer_BeepShort();               /* 蜂鸣器短响0.5s (复用绿灯提示音) */
+  HAL_Delay(500);                   /* 持续500ms */
+  LED_AllOff();                     /* 熄灭所有LED */
+  /* 蜂鸣器会通过Buzzer_Process()在主循环中自动停止 */
 
   /* USER CODE END 2 */
 

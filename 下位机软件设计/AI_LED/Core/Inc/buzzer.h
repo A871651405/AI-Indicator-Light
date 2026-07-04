@@ -21,11 +21,16 @@ extern "C" {
 void Buzzer_Init(void);
 
 /**
-  * @brief  设置蜂鸣器
-  * @param  volume: 音量 0-100
-  * @param  duration_s: 持续时间(秒) 0-60, 0表示停止
+  * @brief  设置蜂鸣器 (使用Flash保存的音量/时长配置)
+  *         用于红灯指令触发
   */
-void Buzzer_Set(uint8_t volume, uint8_t duration_s);
+void Buzzer_TriggerWithSavedSettings(void);
+
+/**
+  * @brief  蜂鸣器短响0.5秒 (固定音量100, 固定时长0.5s)
+  *         用于绿灯指令触发，不可修改
+  */
+void Buzzer_BeepShort(void);
 
 /**
   * @brief  蜂鸣器处理函数 (在主循环中调用, 负责定时关闭)

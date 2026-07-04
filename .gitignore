@@ -6,6 +6,7 @@ __pycache__/
 dist/
 build/
 *.egg
+*.spec
 
 # Keil MDK build output
 下位机软件设计/AI_LED/MDK-ARM/AI_LED/
@@ -14,6 +15,9 @@ build/
 下位机软件设计/AI_LED/MDK-ARM/*.lst
 下位机软件设计/AI_LED/MDK-ARM/DebugConfig/
 下位机软件设计/AI_LED/MDK-ARM/RTE/
+下位机软件设计/AI_LED/MDK-ARM/JLinkLog.txt
+下位机软件设计/AI_LED/MDK-ARM/JLinkSettings.ini
+下位机软件设计/AI_LED/MDK-ARM/EventRecorderStub.scvd
 
 # IDE
 .vscode/
