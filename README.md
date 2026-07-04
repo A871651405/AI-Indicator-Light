@@ -57,7 +57,7 @@ AI指示灯/
 │   ├── api_server.py                # HTTP API服务 (Flask)
 │   ├── agent_example.py             # Agent集成示例
 │   ├── test_api.py                  # API测试脚本
-│   ├── SKILL.md                     # WorkBuddy Skill 定义文件
+│   ├── AI-Indicator-Light-SKILL.md  # WorkBuddy Skill 定义文件
 │   ├── PROTOCOL.md                  # 通信协议文档
 │   ├── requirements.txt             # Python依赖
 │   ├── start.bat                    # Windows启动脚本
@@ -224,9 +224,9 @@ indicator.set_idle()        # AI恢复空闲 → 绿灯
 indicator.set_buzzer(50, 3) # 蜂鸣器：音量50，响3秒
 ```
 
-### SKILL.md 是什么？
+### AI-Indicator-Light-SKILL.md 是什么？
 
-[`上位机软件设计/SKILL.md`](上位机软件设计/SKILL.md) 是一份 **WorkBuddy Skill 定义文件**，描述了如何通过 HTTP API 控制本指示灯。WorkBuddy（或其他兼容的 AI Agent 平台）加载该文件后，Agent 即可在执行任务时自动联动指示灯：
+[`上位机软件设计/AI-Indicator-Light-SKILL.md`](上位机软件设计/AI-Indicator-Light-SKILL.md) 是一份 **WorkBuddy Skill 定义文件**，描述了如何通过 HTTP API 控制本指示灯。WorkBuddy（或其他兼容的 AI Agent 平台）加载该文件后，Agent 即可在执行任务时自动联动指示灯：
 
 - 收到任务的**第一时刻** → 点亮黄灯（表示"AI 正在思考"）
 - 任务**完成**后 → 切换绿灯（表示"AI 空闲，等待新指令"）
@@ -235,11 +235,9 @@ indicator.set_buzzer(50, 3) # 蜂鸣器：音量50，响3秒
 **使用方法**：
 
 1. 启动上位机软件并勾选「启用 API 服务」（默认监听 `http://127.0.0.1:5000`）
-2. 将 `SKILL.md` 复制到 WorkBuddy 的用户级 skills 目录：
-   - Windows：`C:\Users\<用户名>\.workbuddy\skills\ai-indicator\SKILL.md`
-3. 重启 WorkBuddy 会话，Agent 即可自动识别并调用
+2. 将 `AI-Indicator-Light-SKILL` 复制到用户的skills 目录：
+3. 在AGENT的md文件调用该skill
 
-> 📌 仓库里的 `SKILL.md` 仅为存档与分享用途。真正生效的副本位于 `~/.workbuddy/skills/` 目录，修改后需同步回去才会被 Agent 加载。
 
 ## License
 
