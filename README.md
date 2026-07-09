@@ -3,22 +3,22 @@
 一个完整的上下位机AI状态指示灯系统，通过串口控制LED指示灯和蜂鸣器，实时显示AI的工作状态。
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.2-green.svg)
 ![Platform](https://img.shields.io/badge/platform-STM32F030%20%7C%20Python-orange.svg)
 
 ## 项目简介
 
-本项目旨在为AI助手提供一个物理状态指示灯，让用户在远离屏幕时也能直观感知AI的当前状态。系统分为上位机（Python GUI + API）和下位机（STM32固件）两部分。
+本项目旨在为AI助手提供一个物理状态指示灯，让用户在远离屏幕时也能直观感知AI的当前状态。系统分为上位机（PyQt5 GUI + Flask API）和下位机（STM32固件）两部分。
 
 ### 状态定义
 
 | 灯光 | 状态 | 说明 |
 |------|------|------|
-| 🟢 绿灯 | 空闲 | AI等待新任务 |
+| 🟢 绿灯 | 空闲 | AI等待新任务，蜂鸣器短响0.5s |
 | 🟡 黄灯 | 思考 | AI正在处理任务 |
-| 🔴 红灯 | 故障 | 故障/异常状态 |
-| ⚫ 关闭 | - | 关闭指示灯 |
-| 🔊 蜂鸣器 | - | 音量0-100，时长0-60秒 |
+| 🔴 红灯 | 故障 | 故障/异常状态，蜂鸣器按设置响铃 |
+| ⚫ 关闭 | - | 关闭指示灯，同时停止蜂鸣器 |
+| 🔊 蜂鸣器 | 可配置 | 音量0-100，时长0-60秒，支持启用/关闭 |
 
 ## 系统架构
 
@@ -51,15 +51,20 @@
 ```
 AI指示灯/
 ├── 上位机软件设计/                  # Python GUI + Flask API
-│   ├── main.py                      # 主程序入口
-│   ├── gui.py                       # GUI界面 (深色主题)
+│   ├── main.py                      # 主程序入口 (PyQt5)
+│   ├── gui_qt.py                    # PyQt5现代化界面 (浅色/深色双主题)
+│   ├── gui.py                       # 旧版 tkinter 界面 (备份)
+│   ├── theme.py                     # 浅色/深色主题系统
 │   ├── serial_handler.py            # 串口通信 (协议帧+XOR校验)
 │   ├── api_server.py                # HTTP API服务 (Flask)
 │   ├── agent_example.py             # Agent集成示例
 │   ├── test_api.py                  # API测试脚本
 │   ├── AI-Indicator-Light-SKILL.md  # WorkBuddy Skill 定义文件
-│   ├── PROTOCOL.md                  # 通信协议文档
+│   ├── PROTOCOL.md                  # 通信协议文档 (v1.3)
 │   ├── requirements.txt             # Python依赖
+│   ├── generate_icon.py             # 应用图标生成脚本
+│   ├── app_icon.png / .ico          # 应用图标
+│   ├── build_exe.bat                # EXE打包脚本
 │   ├── start.bat                    # Windows启动脚本
 │   └── install_deps.bat             # 依赖安装脚本
 │
@@ -71,14 +76,16 @@ AI指示灯/
 │       │   │   ├── protocol.h       # 通信协议
 │       │   │   ├── led.h            # LED控制
 │       │   │   ├── buzzer.h         # 蜂鸣器控制
+│       │   │   ├── storage.h        # Flash掉电存储
 │       │   │   ├── tim.h            # 定时器
 │       │   │   ├── usart.h          # 串口
 │       │   │   └── gpio.h           # GPIO
 │       │   └── Src/                 # 源文件
-│       │       ├── main.c           # 主程序
+│       │       ├── main.c           # 主程序 (上电自检)
 │       │       ├── protocol.c       # 协议解析 (状态机)
 │       │       ├── led.c            # LED控制实现
 │       │       ├── buzzer.c         # 蜂鸣器PWM控制
+│       │       ├── storage.c        # Flash掉电存储
 │       │       ├── tim.c            # TIM3 PWM (1KHz)
 │       │       ├── usart.c          # 串口中断接收
 │       │       ├── gpio.c           # GPIO初始化
@@ -100,7 +107,7 @@ AI指示灯/
 
 ### 上位机
 
-**环境要求**：Python 3.7+
+**环境要求**：Python 3.8+
 
 ```bash
 cd 上位机软件设计
@@ -109,10 +116,12 @@ python main.py
 ```
 
 启动后：
-1. 选择串口 → 点击「连接串口」
+1. 选择串口 → 点击「连接串口」（自动读取下位机参数同步界面）
 2. 使用灯光按钮控制LED
-3. 调整蜂鸣器音量和时长 → 点击「保存到设备」
+3. 调整蜂鸣器音量和时长，通过拨动开关启用/关闭蜂鸣器 → 点击「保存到设备」
 4. 勾选「启用API服务」供Agent调用
+5. 点击右上角 🌙/☀️ 切换深色/浅色主题
+6. 关闭窗口时可选「退出程序」或「最小化到系统托盘」
 
 ### 下位机
 
@@ -148,7 +157,8 @@ python main.py
 | 黄灯 | 0x02 | 无 | `AA 02 00 A8` |
 | 红灯 | 0x03 | 无 | `AA 03 00 AB` |
 | 关闭 | 0x04 | 无 | `AA 04 00 AE` |
-| 蜂鸣器 | 0x05 | [音量, 时长] | `AA 05 02 50 0A FD` |
+| 蜂鸣器 | 0x05 | [音量, 时长, 启用标志] | `AA 05 03 50 0A 01 FC` |
+| 读取参数 | 0x06 | 请求：无 / 响应：[音量, 时长, 启用标志] | `AA 06 00 AC` |
 
 完整协议文档：[上位机软件设计/PROTOCOL.md](上位机软件设计/PROTOCOL.md)
 
@@ -201,15 +211,39 @@ requests.post('http://127.0.0.1:5000/api/buzzer',
 ## 技术栈
 
 **上位机**：
-- Python 3.7+
-- tkinter (GUI)
-- pyserial (串口通信)
+- Python 3.8+
+- PyQt5 (现代化GUI，浅色/深色双主题)
+- pyserial (串口通信，协议帧 + XOR校验)
 - Flask (HTTP API)
+- PyInstaller (EXE打包)
 
 **下位机**：
-- STM32F030F4Px
+- STM32F030F4Px (Cortex-M0, 48MHz)
 - HAL库
-- Keil MDK-ARM
+- Keil MDK-ARM v5
+- TIM3_CH4 硬件PWM (1KHz)
+- Flash掉电存储 (最后256字节)
+
+## 蜂鸣器功能详解
+
+蜂鸣器通过 TIM3_CH4 (PB1) 硬件PWM控制，频率1KHz：
+
+| 功能 | 说明 |
+|------|------|
+| 音量控制 | 上位机滑条 0-100 → PWM占空比 0-999 |
+| 时长设置 | 绿灯触发固定0.5s，红灯触发使用设置时长 |
+| 启用/关闭 | 拨动开关控制，关闭时任何情况（包括上电自检）均不响 |
+| 掉电保存 | 音量、时长、启用标志存入STM32 Flash（最后256字节） |
+| 参数回读 | 上位机连接串口后自动读取下位机保存的参数并同步界面 |
+
+## 打包为EXE
+
+```bash
+cd 上位机软件设计
+build_exe.bat
+```
+
+打包后的可执行文件位于 `dist/AI指示灯控制器.exe`，可直接在 Windows 上运行，无需安装 Python。
 
 ## Agent集成
 

@@ -2,6 +2,7 @@
 GUI界面模块 - 提供美观简洁的用户界面
 """
 
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import threading
@@ -428,24 +429,37 @@ class AIIndicatorGUI:
         self.status_label.pack(pady=8)
 
     def refresh_ports(self):
-        """刷新串口列表"""
-        ports = self.serial_handler.get_available_ports()
-        
+        """刷新串口列表（含芯片型号显示）"""
+        # 获取带芯片信息的串口列表
+        ports_info = self.serial_handler.get_available_ports_with_info()
+
         # 排序串口（从小到大，COM1, COM2, COM3...）
-        def sort_key(port):
-            import re
+        def sort_key(info):
             # 提取COM端口的编号（如 COM3 -> 3）
-            match = re.search(r'COM(\d+)', port, re.IGNORECASE)
+            match = re.search(r'COM(\d+)', info['device'], re.IGNORECASE)
             if match:
                 return (0, int(match.group(1)))  # COM端口：按编号数值排序
-            return (1, port)  # 非COM端口：按字母排序
-        
-        ports.sort(key=sort_key)
-        
-        self.port_combo['values'] = ports
-        if ports:
-            self.port_combo.set(ports[0])
-        self.log(f"刷新串口列表: {len(ports)} 个可用")
+            return (1, info['device'])  # 非COM端口：按字母排序
+
+        ports_info.sort(key=sort_key)
+
+        # 保存 device -> info 映射，供连接时反查纯串口号
+        self._ports_info = {info['display']: info for info in ports_info}
+
+        # 下拉框显示 "COM3 (CH340)" 格式
+        displays = [info['display'] for info in ports_info]
+        self.port_combo['values'] = displays
+        if displays:
+            self.port_combo.set(displays[0])
+        else:
+            self.port_var.set('')
+
+        # 日志：列出每个串口的芯片型号
+        if ports_info:
+            chip_summary = ', '.join(f"{i['device']}={i['chip']}" for i in ports_info)
+            self.log(f"刷新串口列表: {len(ports_info)} 个可用 [{chip_summary}]")
+        else:
+            self.log("刷新串口列表: 0 个可用")
 
     def toggle_connection(self):
         """切换连接状态"""
@@ -456,16 +470,28 @@ class AIIndicatorGUI:
 
     def connect_serial(self):
         """连接串口"""
-        port = self.port_var.get()
-        if not port:
+        selected = self.port_var.get()
+        if not selected:
             messagebox.showwarning("警告", "请选择串口")
             return
+
+        # 从显示文本中提取纯串口号（如 "COM3 (CH340)" -> "COM3"）
+        # 优先用映射表反查，兜底用正则提取
+        port_info = getattr(self, '_ports_info', {}).get(selected)
+        if port_info:
+            port = port_info['device']
+            chip = port_info['chip']
+        else:
+            # 兜底：正则提取 COM 号
+            match = re.search(r'(COM\d+)', selected, re.IGNORECASE)
+            port = match.group(1) if match else selected
+            chip = '未知'
 
         # 使用固定波特率 115200
         if self.serial_handler.connect(port, 115200):
             self.connect_btn.configure(text="📡 断开连接", bg=self.colors['danger'])
-            self.status_label.configure(text=f"🟢 已连接: {port} @ 115200")
-            self.log(f"✓ 成功连接串口: {port}")
+            self.status_label.configure(text=f"🟢 已连接: {port} ({chip}) @ 115200")
+            self.log(f"✓ 成功连接串口: {port} [{chip}]")
         else:
             messagebox.showerror("错误", "连接串口失败")
 

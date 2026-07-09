@@ -20,11 +20,12 @@ extern "C" {
 #define PROTOCOL_FRAME_TIMEOUT   50   /* 帧超时(ms) */
 
 /* 命令字定义 --------------------------------------------------------*/
-#define CMD_GREEN    0x01   /* 绿灯 (AI空闲) */
-#define CMD_YELLOW   0x02   /* 黄灯 (AI思考) */
-#define CMD_RED      0x03   /* 红灯 (故障/异常) */
-#define CMD_OFF      0x04   /* 关闭灯光 */
-#define CMD_BUZZER   0x05   /* 蜂鸣器设置 [音量][时长] */
+#define CMD_GREEN         0x01   /* 绿灯 (AI空闲) */
+#define CMD_YELLOW        0x02   /* 黄灯 (AI思考) */
+#define CMD_RED           0x03   /* 红灯 (故障/异常) */
+#define CMD_OFF           0x04   /* 关闭灯光 */
+#define CMD_BUZZER        0x05   /* 蜂鸣器设置 [音量][时长][启用标志] */
+#define CMD_READ_PARAMS   0x06   /* 读取下位机参数（音量、时长、启用标志） */
 
 /* 响应码 ------------------------------------------------------------*/
 #define RESP_OK      0x00
@@ -56,6 +57,7 @@ void Protocol_OnByteReceived(uint8_t byte);
 void Protocol_Process(void);
 uint8_t Protocol_CalcChecksum(const uint8_t *data, uint8_t len);
 void Protocol_SendResponse(uint8_t resp_code);
+void Protocol_SendDataFrame(uint8_t cmd, const uint8_t *data, uint8_t data_len);
 
 #ifdef __cplusplus
 }

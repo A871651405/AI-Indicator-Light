@@ -114,6 +114,31 @@ void Protocol_SendResponse(uint8_t resp_code)
 }
 
 /**
+  * @brief  发送完整数据帧到上位机
+  *         帧格式: [0xAA][cmd][data_len][data...][checksum]
+  * @param  cmd: 命令字
+  * @param  data: 数据指针
+  * @param  data_len: 数据长度
+  */
+void Protocol_SendDataFrame(uint8_t cmd, const uint8_t *data, uint8_t data_len)
+{
+    uint8_t frame[3 + PROTOCOL_MAX_DATA_LEN + 1];
+    uint8_t idx = 0;
+
+    frame[idx++] = PROTOCOL_START_BYTE;
+    frame[idx++] = cmd;
+    frame[idx++] = data_len;
+    for (uint8_t i = 0; i < data_len; i++) {
+        frame[idx++] = data[i];
+    }
+    /* 校验和：从起始位到数据结束的 XOR */
+    frame[idx] = Protocol_CalcChecksum(frame, idx);
+    idx++;
+
+    HAL_UART_Transmit(&huart1, frame, idx, HAL_MAX_DELAY);
+}
+
+/**
   * @brief  处理一帧完整的命令 (在主循环中调用)
   */
 void Protocol_Process(void)
@@ -166,11 +191,12 @@ void Protocol_Process(void)
             break;
 
         case CMD_BUZZER:
-            if (parser.data_len >= 2) {
+            if (parser.data_len >= 3) {
                 uint8_t volume = parser.data[0];
                 uint8_t duration = parser.data[1];
-                /* 保存到Flash (掉电保存) */
-                int ret = Storage_SaveBuzzerSettings(volume, duration);
+                uint8_t enabled = parser.data[2];
+                /* 保存到Flash (掉电保存) — 音量、时长、启用标志 */
+                int ret = Storage_SaveBuzzerSettings(volume, duration, enabled);
                 if (ret == 0) {
                     Protocol_SendResponse(RESP_OK);
                 } else {
@@ -180,6 +206,17 @@ void Protocol_Process(void)
                 Protocol_SendResponse(RESP_ERROR);
             }
             break;
+
+        case CMD_READ_PARAMS:
+        {
+            /* 读取下位机参数：返回蜂鸣器音量、时长、启用标志 */
+            uint8_t params[3];
+            params[0] = Storage_GetBuzzerVolume();
+            params[1] = Storage_GetBuzzerDuration();
+            params[2] = Storage_GetBuzzerEnabled();
+            Protocol_SendDataFrame(CMD_READ_PARAMS, params, 3);
+            break;
+        }
 
         default:
             Protocol_SendResponse(RESP_ERROR);

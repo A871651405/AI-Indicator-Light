@@ -5,9 +5,10 @@
   *          使用 TIM3_CH4 (PB1) 硬件PWM输出, 频率1KHz
   *
   *   逻辑说明:
-  *   - 绿灯指令 → Buzzer_BeepShort()   固定0.5s, 音量100, 不可改
-  *   - 红灯指令 → Buzzer_TriggerWithSavedSettings()  使用Flash保存的音量/时长
-  *   - 黄灯/关闭 → 不触发蜂鸣器
+  *   - 所有蜂鸣器触发均从 Flash 读取音量，并检查启用标志
+  *   - 关闭蜂鸣器时，任何情况（包括上电自检）都不会响
+  *   - Buzzer_BeepShort() → 使用 Flash 音量 + 固定 0.5s
+  *   - Buzzer_TriggerWithSavedSettings() → 使用 Flash 音量/时长
   *
   *   音量和时长由 storage 模块掉电保存
   ******************************************************************************
@@ -36,6 +37,15 @@ void Buzzer_Init(void)
 }
 
 /**
+  * @brief  检查蜂鸣器是否启用
+  * @retval 1=启用, 0=关闭
+  */
+uint8_t Buzzer_IsEnabled(void)
+{
+    return Storage_GetBuzzerEnabled();
+}
+
+/**
   * @brief  内部: 启动蜂鸣器 (指定音量和时长ms)
   * @param  volume: 音量 0-100
   * @param  duration_ms: 持续时间(毫秒)
@@ -57,20 +67,29 @@ static void Buzzer_Start(uint8_t volume, uint32_t duration_ms)
 }
 
 /**
-  * @brief  蜂鸣器短响0.5秒 (固定音量100, 固定时长0.5s)
-  *         用于绿灯指令触发，不可修改
+  * @brief  蜂鸣器短响0.5秒 (使用Flash保存的音量)
+  *         用于上电自检和绿灯指令触发
+  *         如果蜂鸣器已关闭(Flash中buzzer_enabled=0)，则不响
   */
 void Buzzer_BeepShort(void)
 {
-    Buzzer_Start(100, 500);   /* 音量100%, 时长500ms */
+    if (!Storage_GetBuzzerEnabled()) {
+        return;   /* 蜂鸣器已关闭，不响 */
+    }
+    uint8_t volume = Storage_GetBuzzerVolume();
+    Buzzer_Start(volume, 500);   /* 使用Flash音量, 固定时长500ms */
 }
 
 /**
   * @brief  设置蜂鸣器 (使用Flash保存的音量/时长配置)
   *         用于红灯指令触发
+  *         如果蜂鸣器已关闭(Flash中buzzer_enabled=0)，则不响
   */
 void Buzzer_TriggerWithSavedSettings(void)
 {
+    if (!Storage_GetBuzzerEnabled()) {
+        return;   /* 蜂鸣器已关闭，不响 */
+    }
     uint8_t volume = Storage_GetBuzzerVolume();
     uint8_t duration_s = Storage_GetBuzzerDuration();
     Buzzer_Start(volume, (uint32_t)duration_s * 1000);

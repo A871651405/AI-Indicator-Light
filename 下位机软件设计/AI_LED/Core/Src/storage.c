@@ -26,6 +26,7 @@ void Storage_Init(void)
         s_config.magic = STORAGE_MAGIC;
         s_config.buzzer_volume = DEFAULT_BUZZER_VOLUME;
         s_config.buzzer_duration = DEFAULT_BUZZER_DURATION;
+        s_config.buzzer_enabled = DEFAULT_BUZZER_ENABLED;
         memset(s_config.reserved, 0xFF, sizeof(s_config.reserved));
 
         /* 写入Flash */
@@ -70,17 +71,27 @@ uint8_t Storage_GetBuzzerDuration(void)
 }
 
 /**
+  * @brief  读取蜂鸣器启用标志
+  */
+uint8_t Storage_GetBuzzerEnabled(void)
+{
+    return s_config.buzzer_enabled;
+}
+
+/**
   * @brief  保存蜂鸣器设置到Flash
   */
-int Storage_SaveBuzzerSettings(uint8_t volume, uint8_t duration)
+int Storage_SaveBuzzerSettings(uint8_t volume, uint8_t duration, uint8_t enabled)
 {
     /* 限幅 */
     if (volume > 100) volume = 100;
     if (duration > 60) duration = 60;
+    if (enabled > 1) enabled = 1;
 
     /* 更新内存缓存 */
     s_config.buzzer_volume = volume;
     s_config.buzzer_duration = duration;
+    s_config.buzzer_enabled = enabled;
 
     HAL_FLASH_Unlock();
 

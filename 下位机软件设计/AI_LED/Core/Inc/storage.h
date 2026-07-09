@@ -26,13 +26,15 @@ extern "C" {
 /* 默认值 */
 #define DEFAULT_BUZZER_VOLUME     50
 #define DEFAULT_BUZZER_DURATION   5
+#define DEFAULT_BUZZER_ENABLED    1    /* 默认启用蜂鸣器 */
 
 /* 存储数据结构 (紧凑布局，方便整页读写) */
 typedef struct {
     uint16_t magic;             /* 魔数 0xA5A5，表示已初始化 */
     uint8_t  buzzer_volume;     /* 蜂鸣器音量 0-100 */
     uint8_t  buzzer_duration;   /* 蜂鸣器响铃时长 0-60秒 */
-    uint8_t  reserved[252];     /* 保留字段，凑齐256字节，方便未来扩展 */
+    uint8_t  buzzer_enabled;    /* 蜂鸣器启用标志: 1=启用, 0=关闭 */
+    uint8_t  reserved[251];     /* 保留字段，凑齐256字节，方便未来扩展 */
 } Storage_Data_t;
 
 /* API函数 -----------------------------------------------------------*/
@@ -56,12 +58,19 @@ uint8_t Storage_GetBuzzerVolume(void);
 uint8_t Storage_GetBuzzerDuration(void);
 
 /**
+  * @brief  读取蜂鸣器启用标志
+  * @retval 1=启用, 0=关闭
+  */
+uint8_t Storage_GetBuzzerEnabled(void);
+
+/**
   * @brief  保存蜂鸣器设置到Flash (掉电保存)
   * @param  volume: 音量 0-100
   * @param  duration: 时长(秒) 0-60
+  * @param  enabled: 启用标志 1=启用, 0=关闭
   * @retval 0:成功, -1:失败
   */
-int Storage_SaveBuzzerSettings(uint8_t volume, uint8_t duration);
+int Storage_SaveBuzzerSettings(uint8_t volume, uint8_t duration, uint8_t enabled);
 
 #ifdef __cplusplus
 }
