@@ -12,11 +12,16 @@ set VENV_PYTHON="C:/Users/87165/.workbuddy/binaries/python/envs/default/Scripts/
 set VENV_PYINSTALLER="C:/Users/87165/.workbuddy/binaries/python/envs/default/Scripts/pyinstaller.exe"
 
 echo [信息] 检查打包环境...
-%VENV_PYTHON% -c "import PyQt5; import serial; import flask" 2>nul
+%VENV_PYTHON% -c "import PyQt5; import serial; import flask; import werkzeug; import jinja2; import click" 2>nul
 if errorlevel 1 (
-    echo [错误] 缺少依赖！请先安装 PyQt5、pyserial、flask
-    pause
-    exit /b 1
+    echo [错误] 缺少依赖！正在尝试自动安装...
+    %VENV_PYTHON% -m pip install pyinstaller PyQt5 pyserial flask 2>nul
+    if errorlevel 1 (
+        echo [错误] 自动安装失败，请手动执行: pip install PyQt5 pyserial flask
+        pause
+        exit /b 1
+    )
+    echo [信息] 依赖安装完成
 )
 echo [信息] 依赖检查通过
 
@@ -26,6 +31,13 @@ cd /d "%~dp0"
 echo [信息] 正在打包，请稍候（可能需要 2-3 分钟）...
 echo.
 
+:: 关键修复：
+:: 1. --collect-submodules flask 替代 --collect-all flask
+::    （--collect-all 在某些 Python 版本上对 flask 无效）
+:: 2. 显式 hidden-import 所有 flask 子模块
+:: 3. 显式 hidden-import flask 的依赖（werkzeug/jinja2/click/markupsafe）
+:: 4. --copy-metadata 复制包的元数据（werkzeug 必需）
+
 %VENV_PYINSTALLER% ^
     --noconfirm ^
     --onefile ^
@@ -33,10 +45,35 @@ echo.
     --name "AI指示灯控制器" ^
     --collect-all PyQt5 ^
     --collect-all serial ^
-    --collect-all flask ^
+    --collect-submodules flask ^
+    --collect-submodules werkzeug ^
+    --collect-submodules jinja2 ^
+    --collect-submodules click ^
+    --copy-metadata werkzeug ^
+    --copy-metadata flask ^
     --hidden-import serial ^
     --hidden-import serial.tools.list_ports ^
     --hidden-import flask ^
+    --hidden-import flask.cli ^
+    --hidden-import flask.app ^
+    --hidden-import flask.blueprints ^
+    --hidden-import flask.config ^
+    --hidden-import flask.ctx ^
+    --hidden-import flask.helpers ^
+    --hidden-import flask.json ^
+    --hidden-import flask.logging ^
+    --hidden-import flask.sessions ^
+    --hidden-import flask.templating ^
+    --hidden-import flask.wrappers ^
+    --hidden-import werkzeug ^
+    --hidden-import werkzeug.routing ^
+    --hidden-import werkzeug.serving ^
+    --hidden-import werkzeug.utils ^
+    --hidden-import werkzeug.wrappers ^
+    --hidden-import jinja2 ^
+    --hidden-import jinja2.ext ^
+    --hidden-import markupsafe ^
+    --hidden-import click ^
     --hidden-import pyserial ^
     --hidden-import PyQt5.QtCore ^
     --hidden-import PyQt5.QtGui ^
